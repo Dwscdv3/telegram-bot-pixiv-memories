@@ -83,6 +83,10 @@ async function randomPic(ctx, isPrivate, uid) {
     const offset = Math.floor(Math.random() * total);
     const [artwork] =
         (await ctx.pixiv.getBookmark({ tag, isPrivate, uid, offset })).works;
+    if (!artwork) {
+        ctx.reply(format(tag ? Templates.tagEmpty : Templates.bookmarkEmpty, tag));
+        return;
+    }
     const url = PixivAPI.thumbURLToLargeURL(artwork.url);
     console.debug(artwork.url);
     ctx.replyWithPhoto(url, {

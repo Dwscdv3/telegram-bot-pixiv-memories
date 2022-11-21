@@ -29,4 +29,6 @@ You can send me /logout to erase your data at any time. Network traffic that con
     loginSuccess: 'Welcome, $0. Your pixiv user ID is $1.',
     repeat: 'One more turn… I mean, pic.',
     tagListHeader: 'Top $0 tags:\n\\(Click to copy\\)',
+    tagEmpty: 'You don\'t have any bookmark tagged $0.',
+    bookmarkEmpty: 'You don\'t have any bookmarks yet.',
 };
