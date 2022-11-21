@@ -87,8 +87,8 @@ async function randomPic(ctx, isPrivate, uid) {
     console.debug(artwork.url);
     ctx.replyWithPhoto(url, {
         caption:
-`<a href="https://www.pixiv.net/artworks/${artwork.id}">${artwork.title}</a><br>
-by <a href="https://www.pixiv.net/users/${artwork.userId}>${artwork.userName}</a>`,
+`<a href="https://www.pixiv.net/artworks/${artwork.id}">${artwork.title}</a>
+by <a href="https://www.pixiv.net/users/${artwork.userId}">${artwork.userName}</a>`,
         parse_mode: 'HTML',
     });
 }
