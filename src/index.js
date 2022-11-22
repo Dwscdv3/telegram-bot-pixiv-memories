@@ -27,17 +27,16 @@ bot.command('login_via_cookie', async ctx => {
     }
     ctx.session.cookie = ctx.arguments.join(' ');
     const response = await ctx.axios.get('/touch/ajax/user/self/status', {
-        headers: {
-            'Cookie': ctx.session.cookie,
-        },
+        headers: { 'Cookie': ctx.session.cookie },
     });
     const { user_id, user_name } = response.data?.body?.user_status;
     if (response.status == 200 && user_id) {
         ctx.session.pixivUserId = user_id;
+        await ctx.reply(Templates.success);
         await ctx.reply(format(Templates.loginSuccess, user_name, user_id));
     } else {
         ctx.session = {};
-        await ctx.reply(Templates.unknownError);
+        await ctx.reply(Templates.cookieInvalid);
     }
 });
 bot.command('logout', async ctx => {
@@ -57,7 +56,7 @@ bot.command('random_from_user', async ctx => {
 
 bot.command('mytags', async ctx => getTagList(ctx));
 bot.command('mytags_private', async ctx => getTagList(ctx, true));
-bot.command('theirtags',async ctx => {
+bot.command('theirtags', async ctx => {
     if (ctx.arguments.length < 1) {
         await ctx.reply(format(Templates.argsMismatch, 1, 0));
         return;
@@ -90,8 +89,8 @@ async function randomPic(ctx, isPrivate, uid) {
     const url = PixivAPI.thumbURLToLargeURL(artwork.url);
     console.debug(artwork.url);
     ctx.replyWithPhoto(url, {
-        caption:
-`<a href="https://www.pixiv.net/artworks/${artwork.id}">${artwork.title}</a>
+        caption: `\
+<a href="https://www.pixiv.net/artworks/${artwork.id}">${artwork.title}</a>
 by <a href="https://www.pixiv.net/users/${artwork.userId}">${artwork.userName}</a>`,
         parse_mode: 'HTML',
     });
