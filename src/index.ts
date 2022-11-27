@@ -10,7 +10,7 @@ import { MyContext } from './types/context.js';
 import { login, onInlineQuery, sendRandomArtwork, sendTagList } from './bot.js';
 import { toInt } from './util/convert.js';
 
-const { compose, branch, command } = Composer;
+const { compose, optional, branch, command } = Composer;
 
 const bot = new Telegraf<MyContext>(await readFile('token', { encoding: 'utf8' }));
 
@@ -30,23 +30,25 @@ bot.command('logout', async ctx => {
     await ctx.reply(Templates.success);
 });
 
-bot.use(branch(async ctx => !!ctx.session.cookie,
-    compose([
-        command('random', async ctx => await sendRandomArtwork(ctx)),
-        command('random_private', async ctx => await sendRandomArtwork(ctx, true)),
-        command('random_from_user',
-            assertArgumentsAtLeast(1),
-            async ctx => await sendRandomArtwork(ctx, false, ctx.castArgument(0, toInt)),
-        ),
-        command('mytags', async ctx => sendTagList(ctx)),
-        command('mytags_private', async ctx => sendTagList(ctx, true)),
-        command('theirtags',
-            assertArgumentsAtLeast(1),
-            async ctx => await sendTagList(ctx, false, ctx.castArgument(0, toInt)),
-        ),
-    ]),
-    async ctx => await ctx.reply(Templates.requireLogin),
-));
+bot.on('text', optional(ctx => ctx.message.entities?.[0].type == 'bot_command',
+    branch(async ctx => !!ctx.session.cookie,
+        compose([
+            command('random', async ctx => await sendRandomArtwork(ctx)),
+            command('random_private', async ctx => await sendRandomArtwork(ctx, true)),
+            command('random_from_user',
+                assertArgumentsAtLeast(1),
+                async ctx => await sendRandomArtwork(ctx, false, ctx.castArgument(0, toInt)),
+            ),
+            command('mytags', async ctx => sendTagList(ctx)),
+            command('mytags_private', async ctx => sendTagList(ctx, true)),
+            command('theirtags',
+                assertArgumentsAtLeast(1),
+                async ctx => await sendTagList(ctx, false, ctx.castArgument(0, toInt)),
+            ),
+        ]),
+        async ctx => await ctx.reply(Templates.requireLogin),
+    )),
+);
 
 bot.on('inline_query', onInlineQuery);
 
