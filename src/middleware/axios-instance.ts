@@ -1,6 +1,7 @@
+import { MyContext } from '../types/context.js';
 import axios from 'axios';
 
-export default async function AxiosInstanceMiddleware(ctx, next) {
+export default async function AxiosInstanceMiddleware(ctx: MyContext, next: () => Promise<void>) {
     ctx.axios = axios.create({
         baseURL: 'https://www.pixiv.net/',
         headers: {
