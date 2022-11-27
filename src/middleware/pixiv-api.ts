@@ -9,7 +9,7 @@ export default async function PixivAPIMiddleware(ctx: MyContext, next: () => Pro
         await next();
     } catch (ex) {
         if (axios.isAxiosError(ex)) {
-            if (ex.response?.status == 400 || ex.response?.status == 403) {
+            if (ex.response?.status == 401 || ex.response?.status == 403) {
                 ctx.reply(Templates.cookieExpired);
             } else {
                 throw ex;

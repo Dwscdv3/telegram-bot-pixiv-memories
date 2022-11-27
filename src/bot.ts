@@ -53,34 +53,42 @@ export async function login(ctx: MyContext) {
 }
 
 export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.InlineQueryUpdate>) {
-    const queries = ctx.inlineQuery.query.split(' ');
-    const [visibility, search] = queries;
-    // TODO: login check
-    let results: InlineQueryResult[] = [];
-    if (queries.length >= 3) {
-        const artworks = await ctx.pixiv.getRandomBookmarks({
-            tag: search == 'all' ? undefined : search,
-            isPrivate: visibility == 'private',
+    try {
+        if (!ctx.session?.cookie) throw '';
+        const queries = ctx.inlineQuery.query.split(/\s/);
+        const [visibility, search] = queries;
+        let results: InlineQueryResult[] = [];
+        if (queries.length >= 3) {
+            const artworks = await ctx.pixiv.getRandomBookmarks({
+                tag: search == 'all' ? undefined : search,
+                isPrivate: visibility == 'private',
+            });
+            results = artworks.map((artwork): InlineQueryResult => ({
+                type: 'photo',
+                id: artwork.id,
+                thumb_url: artwork.url,
+                photo_url: PixivAPI.thumbURLToLargeURL(artwork.url),
+                title: artwork.title,
+                description: artwork.userName,
+                caption: format(Templates.artwork,
+                    artwork.id, artwork.title, artwork.userId, artwork.userName),
+                parse_mode: 'HTML',
+            }));
+        } else if (visibility == 'public' || visibility == 'private') {
+            results = (await ctx.pixiv.getTagList({
+                isPrivate: visibility == 'private',
+            })).filter(tag => search?.length ? tag.tag.includes(search) : true)
+                .slice(0, 50)
+                .map(tag => inlineQueryPrompt(tag.tag, tag.cnt.toString()));
+        } else if (queries.length <= 1) {
+            results = [inlineQueryPrompt('public'), inlineQueryPrompt('private')];
+        }
+        await ctx.answerInlineQuery(results);
+    } catch (ex) {
+        await ctx.answerInlineQuery([], {
+            switch_pm_text: 'Log in to pixiv',
+            switch_pm_parameter: 'login',
+            cache_time: 0,
         });
-        results = artworks.map((artwork): InlineQueryResult => ({
-            type: 'photo',
-            id: artwork.id,
-            thumb_url: artwork.url,
-            photo_url: PixivAPI.thumbURLToLargeURL(artwork.url),
-            title: artwork.title,
-            description: artwork.userName,
-            caption: format(Templates.artwork,
-                artwork.id, artwork.title, artwork.userId, artwork.userName),
-            parse_mode: 'HTML',
-        }));
-    } else if (visibility == 'public' || visibility == 'private') {
-        results = (await ctx.pixiv.getTagList({
-            isPrivate: visibility == 'private',
-        })).filter(tag => search?.length ? tag.tag.includes(search) : true)
-            .slice(0, 50)
-            .map(tag => inlineQueryPrompt(tag.tag, tag.cnt.toString()));
-    } else if (queries.length <= 1) {
-        results = [inlineQueryPrompt('public'), inlineQueryPrompt('private')];
     }
-    await ctx.answerInlineQuery(results);
 }

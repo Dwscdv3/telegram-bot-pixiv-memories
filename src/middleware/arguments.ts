@@ -46,7 +46,7 @@ export function assertArgumentsAtLeast(count: number) {
 function parse(str: string) {
     if (typeof str != 'string') return [];
     if (!str.startsWith('/')) return [];
-    let args = str.split(' ');
+    let args = str.split(/\s/);
     args.shift();
     for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith('"')) {
