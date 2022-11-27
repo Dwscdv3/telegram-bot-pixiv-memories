@@ -62,6 +62,7 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
             const artworks = await ctx.pixiv.getRandomBookmarks({
                 tag: search == 'all' ? undefined : search,
                 isPrivate: visibility == 'private',
+                count: 5,
             });
             results = artworks.map((artwork): InlineQueryResult => ({
                 type: 'photo',
