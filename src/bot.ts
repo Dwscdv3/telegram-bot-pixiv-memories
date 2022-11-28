@@ -5,6 +5,7 @@ import { NarrowedContext } from 'telegraf';
 import { InlineQueryResult, Update } from 'telegraf/types';
 import { inlineQueryPrompt } from './util/telegraf.js';
 import { toInt } from './util/convert.js';
+import axios from 'axios';
 
 export async function sendRandomArtwork(ctx: MyContext, isPrivate?: boolean, uid?: number) {
     const tag = ctx.arguments[0] ?? '';
@@ -13,7 +14,7 @@ export async function sendRandomArtwork(ctx: MyContext, isPrivate?: boolean, uid
         ctx.reply(format(tag ? Templates.tagEmpty : Templates.bookmarkEmpty, tag));
         return;
     }
-    const url = PixivAPI.thumbURLToLargeURL(artwork.url);
+    const url = PixivAPI.toLargeURL(artwork.url);
     ctx.replyWithPhoto(url, {
         caption: format(Templates.artwork,
             artwork.id, artwork.title, artwork.userId, artwork.userName),
@@ -53,6 +54,15 @@ export async function login(ctx: MyContext) {
 }
 
 export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.InlineQueryUpdate>) {
+    let cancelled = false;
+    const watchdog = setTimeout(() => {
+        cancelled = true;
+        ctx.answerInlineQuery([], {
+            switch_pm_text: 'pixiv timed out',
+            switch_pm_parameter: 'pixiv_timeout',
+            cache_time: 0,
+        });
+    }, 5000);
     try {
         if (!ctx.session?.cookie) throw '';
         const queries = ctx.inlineQuery.query.split(/\s/);
@@ -62,13 +72,13 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
             const artworks = await ctx.pixiv.getRandomBookmarks({
                 tag: search == 'all' ? undefined : search,
                 isPrivate: visibility == 'private',
-                count: 5,
+                count: 4,
             });
             results = artworks.map((artwork): InlineQueryResult => ({
                 type: 'photo',
                 id: artwork.id,
-                thumb_url: artwork.url,
-                photo_url: PixivAPI.thumbURLToLargeURL(artwork.url),
+                thumb_url: PixivAPI.toThumbURL(artwork.url),
+                photo_url: PixivAPI.toLargeURL(artwork.url),
                 title: artwork.title,
                 description: artwork.userName,
                 caption: format(Templates.artwork,
@@ -84,12 +94,18 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
         } else if (queries.length <= 1) {
             results = [inlineQueryPrompt('public'), inlineQueryPrompt('private')];
         }
-        await ctx.answerInlineQuery(results);
+        clearTimeout(watchdog);
+        if (!cancelled) {
+            await ctx.answerInlineQuery(results);
+        }
     } catch (ex) {
-        await ctx.answerInlineQuery([], {
-            switch_pm_text: 'Log in to pixiv',
-            switch_pm_parameter: 'login',
-            cache_time: 0,
-        });
+        clearTimeout(watchdog);
+        if (!cancelled) {
+            await ctx.answerInlineQuery([], {
+                switch_pm_text: 'Log in to pixiv',
+                switch_pm_parameter: 'login',
+                cache_time: 0,
+            });
+        }
     }
 }

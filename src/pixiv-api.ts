@@ -91,10 +91,18 @@ export class PixivAPI {
         return body;
     }
 
-    static thumbURLToLargeURL(url: string) {
+    static toLargeURL(url: string) {
         return url
             .replace(/(?<=pximg.net\/).+(?=\/img\/)/, 'img-master')
             .replace('custom', 'master')
             .replace('square', 'master');
+    }
+
+    static toThumbURL(url: string) {
+        return url.replace(/(?<=\/c\/).+?(?=\/)/, '260x260_80');
+    }
+
+    static toPixivCatURL(url: string) {
+        return url.replace('i.pximg.net', 'i.pixiv.cat');
     }
 }
