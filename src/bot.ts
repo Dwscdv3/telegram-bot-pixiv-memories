@@ -5,7 +5,6 @@ import { NarrowedContext } from 'telegraf';
 import { InlineQueryResult, Update } from 'telegraf/types';
 import { inlineQueryPrompt } from './util/telegraf.js';
 import { toInt } from './util/convert.js';
-import axios from 'axios';
 
 export async function sendRandomArtwork(ctx: MyContext, isPrivate?: boolean, uid?: number) {
     const tag = ctx.arguments[0] ?? '';
@@ -67,13 +66,21 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
         if (!ctx.session?.cookie) throw '';
         const queries = ctx.inlineQuery.query.split(/\s/);
         const [visibility, search] = queries;
+        const index = parseInt(queries[2]);
         let results: InlineQueryResult[] = [];
         if (queries.length >= 3) {
-            const artworks = await ctx.pixiv.getRandomBookmarks({
-                tag: search == 'all' ? undefined : search,
-                isPrivate: visibility == 'private',
-                count: 4,
-            });
+            const artworks = isNaN(index)
+                ? await ctx.pixiv.getRandomBookmarks({
+                    tag: search == 'all' ? undefined : search,
+                    isPrivate: visibility == 'private',
+                    count: 4,
+                })
+                : await ctx.pixiv.getBookmarks({
+                    tag: search == 'all' ? undefined : search,
+                    isPrivate: visibility == 'private',
+                    count: 4,
+                    index,
+                });
             results = artworks.map((artwork): InlineQueryResult => ({
                 type: 'photo',
                 id: artwork.id,
