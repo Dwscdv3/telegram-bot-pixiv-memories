@@ -1,7 +1,6 @@
 import { Context } from 'telegraf';
 import { NarrowedContext } from 'node_modules/telegraf/typings/context.js';
-import { Update } from 'telegraf/types';
-import { Message } from 'typegram';
+import { Update, Message } from 'telegraf/types';
 import { Axios } from 'axios';
 import { PixivAPI } from '../pixiv-api.js';
 import { MySession } from './session.js';

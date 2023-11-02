@@ -5,6 +5,7 @@ import { NarrowedContext } from 'telegraf';
 import { InlineQueryResult, Update } from 'telegraf/types';
 import { inlineQueryPrompt } from './util/telegraf.js';
 import { toInt } from './util/convert.js';
+import { PixivArtwork } from './types/pixiv.js';
 
 export async function sendRandomArtwork(ctx: MyContext, isPrivate?: boolean, uid?: number) {
     const tag = ctx.arguments[0] ?? '';
@@ -13,7 +14,7 @@ export async function sendRandomArtwork(ctx: MyContext, isPrivate?: boolean, uid
         ctx.reply(format(tag ? Templates.tagEmpty : Templates.bookmarkEmpty, tag));
         return;
     }
-    const url = PixivAPI.toLargeURL(artwork.url);
+    const url = PixivAPI.toLargeURL(artwork.url!);
     ctx.replyWithPhoto(url, {
         caption: format(Templates.artwork,
             artwork.id, artwork.title, artwork.userId, artwork.userName),
@@ -56,11 +57,7 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
     let cancelled = false;
     const watchdog = setTimeout(() => {
         cancelled = true;
-        ctx.answerInlineQuery([], {
-            switch_pm_text: 'pixiv timed out',
-            switch_pm_parameter: 'pixiv_timeout',
-            cache_time: 0,
-        });
+        ctx.answerInlineQuery([], { cache_time: 0 });
     }, 5000);
     try {
         if (!ctx.session?.cookie) throw '';
@@ -68,7 +65,11 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
         const [visibility, search] = queries;
         const index = parseInt(queries[2]);
         let results: InlineQueryResult[] = [];
-        if (queries.length >= 3) {
+        const pid = parseInt(queries[0].match(/\d+/)?.[0]!);
+        if (pid) {
+            const artwork = await ctx.pixiv.getArtwork(pid);
+            results = [artworkToInlineQueryResult(artwork)];
+        } else if (queries.length >= 3) {
             const artworks = isNaN(index)
                 ? await ctx.pixiv.getRandomBookmarks({
                     tag: search == 'all' ? undefined : search,
@@ -81,17 +82,7 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
                     count: 4,
                     index,
                 });
-            results = artworks.map((artwork): InlineQueryResult => ({
-                type: 'photo',
-                id: artwork.id,
-                thumb_url: PixivAPI.toThumbURL(artwork.url),
-                photo_url: PixivAPI.toLargeURL(artwork.url),
-                title: artwork.title,
-                description: artwork.userName,
-                caption: format(Templates.artwork,
-                    artwork.id, artwork.title, artwork.userId, artwork.userName),
-                parse_mode: 'HTML',
-            }));
+            results = artworks.map(artworkToInlineQueryResult);
         } else if (visibility == 'public' || visibility == 'private') {
             results = (await ctx.pixiv.getTagList({
                 isPrivate: visibility == 'private',
@@ -99,20 +90,35 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
                 .slice(0, 50)
                 .map(tag => inlineQueryPrompt(tag.tag, tag.cnt.toString()));
         } else if (queries.length <= 1) {
-            results = [inlineQueryPrompt('public'), inlineQueryPrompt('private')];
+            results = [
+                inlineQueryPrompt('public'),
+                inlineQueryPrompt('private'),
+                inlineQueryPrompt('https://www.pixiv.net/artworks/12345678'),
+                inlineQueryPrompt('12345678'),
+            ];
         }
         clearTimeout(watchdog);
         if (!cancelled) {
             await ctx.answerInlineQuery(results);
         }
     } catch (ex) {
+        console.error(ex);
         clearTimeout(watchdog);
         if (!cancelled) {
-            await ctx.answerInlineQuery([], {
-                switch_pm_text: 'Log in to pixiv',
-                switch_pm_parameter: 'login',
-                cache_time: 0,
-            });
+            await ctx.answerInlineQuery([], { cache_time: 0 });
         }
     }
 }
+
+const artworkToInlineQueryResult = (artwork: PixivArtwork): InlineQueryResult => ({
+    type: 'photo',
+    id: artwork.id,
+    thumbnail_url: artwork.urls?.thumb ?? artwork.url!,
+    photo_url: artwork.urls?.regular ?? PixivAPI.toLargeURL(artwork.url!),
+    title: artwork.title,
+    description: artwork.userName,
+    caption: format(Templates.artwork,
+        artwork.id, artwork.title, artwork.userId, artwork.userName)
+        + (artwork.pageCount > 1 ? `\n${artwork.pageCount} pages` : ''),
+    parse_mode: 'HTML',
+});

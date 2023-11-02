@@ -20,7 +20,8 @@ Show the most used tags from...
 
 Inline query...
 In any chat, type:
-@botName <"public"|"private"> <tagName|"all"> [type to re-roll artworks]`,
+@botName <"public"|"private"> <tagName|"all"> <number:index|string:randomSeed>
+@botName <artworkUrl|pid>`,
     privacy: `\
 This bot will store your pixiv cookie and user ID for necessary servicing.
 

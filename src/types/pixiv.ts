@@ -3,10 +3,18 @@ export interface PixivTag {
     cnt: number;
 }
 
-export interface PixivBookmark {
+export interface PixivArtwork {
     id: string;
+    pageCount: number;
     title: string;
-    url: string;
+    url?: string;
+    urls?: {
+        original: string;
+        regular: string;
+        small: string;
+        thumb: string;
+        mini: string;
+    };
     userId: string;
     userName: string;
 }

@@ -1,5 +1,5 @@
 import { Axios } from 'axios';
-import { PixivBookmark, PixivTag } from './types/pixiv.js';
+import { PixivArtwork, PixivTag } from './types/pixiv.js';
 
 const CacheTTL = 5 * 60 * 1000;
 
@@ -13,13 +13,17 @@ export class PixivAPI {
         this.uid = uid;
     }
 
+    async getArtwork(pid: number): Promise<PixivArtwork> {
+        return (await this.axios.get(`/ajax/illust/${pid}`)).data.body;
+    }
+
     async getBookmarks({
         isPrivate = false,
         tag = '',
         index = 0,
         count = 20,
         uid = this.uid,
-    } = {}): Promise<PixivBookmark[]> {
+    } = {}): Promise<PixivArtwork[]> {
         return (await this.axios.get(`/ajax/user/${uid}/illusts/bookmarks`, {
             params: {
                 tag,
