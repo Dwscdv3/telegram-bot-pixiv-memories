@@ -10,3 +10,12 @@ export function inlineQueryPrompt(title: string, description?: string): InlineQu
         input_message_content: { message_text: Templates.nopQueryResult },
     };
 }
+
+export function htmlEscape(str?: string) {
+    return str
+        ? str
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+        : str;
+}

@@ -3,7 +3,7 @@ import { PixivAPI } from './pixiv-api.js';
 import { MyContext } from './types/context.js';
 import { NarrowedContext } from 'telegraf';
 import { InlineQueryResult, Update } from 'telegraf/types';
-import { inlineQueryPrompt } from './util/telegraf.js';
+import { htmlEscape, inlineQueryPrompt } from './util/telegraf.js';
 import { toInt } from './util/convert.js';
 import { PixivArtwork } from './types/pixiv.js';
 
@@ -118,7 +118,10 @@ const artworkToInlineQueryResult = (artwork: PixivArtwork): InlineQueryResult =>
     title: artwork.title,
     description: artwork.userName,
     caption: format(Templates.artwork,
-        artwork.id, artwork.title, artwork.userId, artwork.userName)
-        + (artwork.pageCount > 1 ? `\n${artwork.pageCount} pages` : ''),
+        artwork.id,
+        htmlEscape(artwork.title),
+        artwork.userId,
+        htmlEscape(artwork.userName),
+    ) + (artwork.pageCount > 1 ? `\n${artwork.pageCount} pages` : ''),
     parse_mode: 'HTML',
 });
