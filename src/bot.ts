@@ -11,11 +11,11 @@ export async function sendRandomArtwork(ctx: MyContext, isPrivate?: boolean, uid
     const tag = ctx.arguments[0] ?? '';
     const artwork = await ctx.pixiv.getRandomBookmark({ tag, isPrivate, uid });
     if (!artwork) {
-        ctx.reply(format(tag ? Templates.tagEmpty : Templates.bookmarkEmpty, tag));
+        await ctx.reply(format(tag ? Templates.tagEmpty : Templates.bookmarkEmpty, tag));
         return;
     }
     const url = PixivAPI.toLargeURL(artwork.url!);
-    ctx.replyWithPhoto(url, {
+    await ctx.replyWithPhoto(url, {
         caption: format(Templates.artwork,
             artwork.id, artwork.title, artwork.userId, artwork.userName),
         parse_mode: 'HTML',
@@ -57,7 +57,8 @@ export async function onInlineQuery(ctx: NarrowedContext<MyContext, Update.Inlin
     let cancelled = false;
     const watchdog = setTimeout(() => {
         cancelled = true;
-        ctx.answerInlineQuery([], { cache_time: 0 });
+        ctx.answerInlineQuery([inlineQueryPrompt('Timed out')], { cache_time: 0 })
+            .catch(console.error);
     }, 5000);
     try {
         if (!ctx.session?.cookie) throw '';

@@ -52,6 +52,8 @@ bot.on('text', optional(ctx => ctx.message.entities?.[0].type == 'bot_command',
 
 bot.on('inline_query', onInlineQuery);
 
+bot.catch(console.error);
+
 bot.launch();
 
 console.log('Bot is now online.');
